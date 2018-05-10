@@ -33,13 +33,13 @@
     <div class="col">
 	  <div class="container" id="cynoes">
 		<div id="out-of">Out of <span id="killmails-checked"></span> and <span id="lossmails-checked"></span> checked:</div>
-		<div id="cyno-percent"></div>
+		<div><span id="cyno-percent"></span> (<span id="cyno-percent-recent"></span>)</div>
 		<div class="btn-group">
 			<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Losses with cynoes fitted 
 			<span class="badge badge-danger" id="cyno-count"></span><span class="sr-only">cynoes</span> <span class="caret"></span></button>
 			<ul class="dropdown-menu scrollable-menu" role="menu" id="cyno-list"></ul>
 		</div>
-		<div id="supers-percent"></div>
+		<div><span id="supers-percent"></span> (<span id="supers-percent-recent"></span>)</div>
 		<div class="btn-group">
 				<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Kills with supers 
 				<span class="badge badge-danger" id="super-count"></span><span class="sr-only">supers</span> <span class="caret"></span></button>
@@ -123,24 +123,32 @@
 			    	$("#cyno-list").empty();
 					$("#lossmails-checked").text(`${data.length} lossmails`);
 					var total_cynoes = 0;
-	      			data.forEach(function(element){
-	      				var ship = element.victim.ship_type_id;
+					var total_cynoes_recently = 0;
+					var today = moment();
+	      			data.forEach(function(killmail){
+	      				var ship = killmail.victim.ship_type_id;
 						var rookie_ships = [606, 588, 601, 596];
-	      				if((element.victim.items.some(module => (module.item_type_id == 28646 /*covert cyno*/ || module.item_type_id == 21096 /*normal cyno*/) && (module.flag > 26 && module.flag < 35))) && (!rookie_ships.includes(ship)))
+	      				if((killmail.victim.items.some(module => (module.item_type_id == 28646 /*covert cyno*/ || module.item_type_id == 21096 /*normal cyno*/) && (module.flag > 26 && module.flag < 35))) && (!rookie_ships.includes(ship)))
 	      				{
 							total_cynoes += 1;
+							if(today.diff(moment(killmail.killmail_time), 'months') < 3)
+							{
+								total_cynoes_recently += 1;
+							}
 	      					getShipName(ship, function(name){
-								$("#cyno-list").append(`<li><a target="_blank" class="dropdown-item" data-time=${element.killmail_time} href="https://zkillboard.com/kill/${element.killmail_id}/">${name} @ ${moment(element.killmail_time).utc().format('MMMM Do YYYY')}</a></li>`);
+								$("#cyno-list").append(`<li><a target="_blank" class="dropdown-item" data-time=${killmail.killmail_time} href="https://zkillboard.com/kill/${killmail.killmail_id}/">${name} @ ${moment(killmail.killmail_time).utc().format('MMMM Do YYYY')}</a></li>`);
 	      					});
 	      				}
 	      			});
+					var pod_ship_id = [670, 33328];
+					var lossmails_recently = data.filter(lossmail => (today.diff(moment(lossmail.killmail_time), 'months') < 3) && (!pod_ship_id.includes(lossmail.victim.ship_type_id))).length;
+					$("#cyno-percent-recent").text(`${getPercent(total_cynoes_recently, lossmails_recently)} % recently`);
 					$("#cyno-count").text(total_cynoes);
 					if(total_cynoes == 0)
 					{
 						$("#cyno-list").append(`<li class="dropdown-item disabled">No ships with cynoes lost.</li>`);
 					}
-					var cyno_percent = Math.round(total_cynoes/data.length*100, 1);
-					$("#cyno-percent").text(`${isNaN(cyno_percent) ? 0 : cyno_percent}% had cyno`);
+					$("#cyno-percent").text(`${getPercent(total_cynoes, data.length)}% had cyno`);
 	   			}
 				});
     }
@@ -194,17 +202,24 @@
 				var supers = [3514, 22852, 23913, 23917, 23919, 42125];
 				var titans = [671, 3764, 11567, 23773, 42126, 42241, 45649];
 				var killmails_with_supers = 0;
+				var killmails_with_supers_recently = 0;
+				var today = moment();
 				data.forEach(function(killmail){
 					if(killmail.attackers.some(x => supers.includes(x.ship_type_id) || titans.includes(x.ship_type_id)))
 					{
 						killmails_with_supers += 1;
+						if(today.diff(moment(killmail.killmail_time), 'months') < 3)
+						{
+							killmails_with_supers_recently += 1;
+						}
 						getShipName(killmail.victim.ship_type_id, function(name){
 								$("#super-list").append(`<li><a target="_blank" class="dropdown-item" data-time=${killmail.killmail_time} href="https://zkillboard.com/kill/${killmail.killmail_id}/">${name} @ ${moment(killmail.killmail_time).utc().format('MMMM Do YYYY')}</a></li>`);
 	      				});
 					}
 				});
-				var supers_percent = Math.round(killmails_with_supers/data.length*100, 1);
-				$("#supers-percent").text(`${isNaN(supers_percent) ? 0 : supers_percent}% had supers or titans`);
+				var killmails_recent = data.filter(killmail => today.diff(moment(killmail.killmail_time), 'months') < 3).length;
+				$("#supers-percent-recent").text(`${getPercent(killmails_with_supers_recently, killmails_recent)}% recently`);
+				$("#supers-percent").text(`${getPercent(killmails_with_supers, data.length)}% had supers or titans`);
 				$("#super-count").text(killmails_with_supers);
 				if(killmails_with_supers == 0)
 				{
@@ -227,6 +242,19 @@
     		callback(data.name);
     	})
     }
+
+	function getPercent(number, total)
+	{
+		var percent = Math.round(number/total*100, 1);
+		if(isNaN(percent))
+		{
+			return 0;
+		}
+		else
+		{
+			return percent;
+		}
+	}
 
 
 	$(document).ready(function(){
