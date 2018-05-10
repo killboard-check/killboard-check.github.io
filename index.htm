@@ -47,7 +47,7 @@
 	  </div>
     </div>
     <div class="col">
-      Flies with:
+      <div id="flies-with"></div>
       <div class="container" id="friends"><ul class="list-group"></ul></div>
     </div>
   </div>
@@ -131,7 +131,8 @@
 					{
 						$("#cyno-list").append(`<li class="dropdown-item disabled">No ships with cynoes lost</li>`);
 					}
-					$("#cyno-percent").text(`Out of ${data.length} lossmails checked ${Math.round(total_cynoes/data.length*100, 1)}% had cyno`);
+					var cyno_percent = Math.round(total_cynoes/data.length*100, 1);
+					$("#cyno-percent").text(`Out of ${data.length} lossmails checked ${isNaN(cyno_percent) ? 0 : cyno_percent}% had cyno`);
 	   			}
 				});
     }
@@ -144,6 +145,7 @@
 			dataType: "json",
 			success: function(data){
 				$("#friends>ul").empty();
+				$("#flies-with").text(`Flies with (${data.length} killmails checked):`)
 				var alliances = new Array();
 				var number_of_killmails = data.length;
 				
@@ -159,13 +161,12 @@
 						}
 					})
 				})
-				
 				alliances.forEach(function(element){
 					if(element.id != undefined)
 					{
 						var alliance_on_killmails = 0;
 						data.forEach(function(killmail){
-							if(killmail.attackers.some(x => x.alliance_id == element.id))
+							if(killmail.attackers.some(x => x.alliance_id == element.id && x.character_id != char_id))
 								{
 									alliance_on_killmails += 1;
 								}
@@ -174,7 +175,7 @@
 							if(alliance_on_killmails/number_of_killmails > 0.2)
 							{
 							$.getJSON(`https://esi.evetech.net/latest/alliances/${element.id}/`, function(alliance_response){
-								$("#friends>ul").append(`<li class="list-group-item"><a target="_blank" data-number=${alliance_on_killmails} href="https://zkillboard.com/alliance/${element.id}/">${alliance_response.name}</a> &lt;${alliance_response.ticker}&gt; (${alliance_on_killmails}) </br></li>`);
+								$("#friends>ul").append(`<li class="list-group-item"><a target="_blank" data-number=${alliance_on_killmails} href="https://zkillboard.com/alliance/${element.id}/">${alliance_response.name}</a> &lt;${alliance_response.ticker}&gt; <span class="font-weight-light">(on ${alliance_on_killmails} killmails)</span> </br></li>`);
 								tinysort("#friends>ul>li", {order: 'desc', selector: 'a', data: 'number'});
 							})
 							}
