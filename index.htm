@@ -131,7 +131,7 @@
 					{
 						$("#cyno-list").append(`<li class="dropdown-item disabled">No ships with cynoes lost</li>`);
 					}
-					$("#cyno-percent").text(`Out of ${data.length} lossmails checked ${total_cynoes/data.length*100}% had cyno`);
+					$("#cyno-percent").text(`Out of ${data.length} lossmails checked ${Math.round(total_cynoes/data.length*100, 1)}% had cyno`);
 	   			}
 				});
     }
@@ -145,6 +145,7 @@
 			success: function(data){
 				$("#friends").empty();
 				var alliances = new Array();
+				var number_of_killmails = data.length;
 				data.forEach(function(element){
 					element.attackers.forEach(function(attacker){
 						if(alliances.find(x => x.id == attacker.alliance_id) == undefined)
@@ -160,11 +161,22 @@
 				alliances.sort(function(a,b){
 					return b.kills - a.kills;
 				})
-				alliances.slice(0, 5).forEach(function(element){
+				alliances.forEach(function(element){
 					if(element.id != undefined)
 					{
-						$.getJSON(`https://esi.evetech.net/latest/alliances/${element.id}/`, function(data){
-							$("#friends").append(`<a target="_blank" href="https://zkillboard.com/alliance/${element.id}/">${data.name}</a> &lt;${data.ticker}&gt; </br>`);
+						$.getJSON(`https://esi.evetech.net/latest/alliances/${element.id}/`, function(alliance_response){
+							var alliance_on_killmails = 0;
+							data.forEach(function(killmail){
+								if(killmail.attackers.some(x => x.alliance_id == element.id))
+								{
+									alliance_on_killmails += 1;
+								}
+							})
+							if(alliance_on_killmails/number_of_killmails > 0.2)
+							{
+								$("#friends").append(`<li><a target="_blank" data-number=${alliance_on_killmails} href="https://zkillboard.com/alliance/${element.id}/">${alliance_response.name}</a> &lt;${alliance_response.ticker}&gt; (${alliance_on_killmails}) </br></li>`);
+								tinysort("#friends>li", {order: 'desc', selector: 'a', data: 'number'});
+							}
 						})
 					}
 				});
