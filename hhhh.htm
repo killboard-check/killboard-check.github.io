@@ -30,7 +30,19 @@
         </div>
       </div>
     <div class="col">
-	  <div class="container" id="cynoes"></div>
+	  <div class="container" id="cynoes">
+		<div class="container">
+			<div class="row">
+				<div class="col-lg-12">
+					<div class="btn-group">
+						<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Kills with cynoes fitted 
+						<span class="badge badge-danger" id="cyno-count"></span><span class="sr-only">cynoes</span> <span class="caret"></span></button>
+						<ul class="dropdown-menu scrollable-menu" role="menu" id="cyno-list"></ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	  </div>
     </div>
     <div class="col">
       Flies with:
@@ -96,16 +108,19 @@
 			    url: `https://zkillboard.com/api/losses/characterID/${char_id}/`,
 			    dataType: "json",
 			    success: function(data) {
-			    	$("#cynoes").empty();
+			    	$("#cyno-list").empty();
+					var total_cynoes = 0;
 	      			data.forEach(function(element){
 	      				var ship = element.victim.ship_type_id;
 	      				if((element.victim.items.some(module => (module.item_type_id == 28646 /*covert cyno*/ || module.item_type_id == 21096 /*normal cyno*/) && (module.flag > 26 && module.flag < 35))) && (ship != 606 && ship != 588 && ship != 601 && ship != 596))
 	      				{
+							total_cynoes += 1;
 	      					getShipName(ship, function(name){
-								$("#cynoes").append(`Had cyno on a ${name} @ ${moment(element.killmail_time).utc().format('MMMM Do YYYY')} </br>`);
+								$("#cyno-list").append(`<li><a target="_blank" class="dropdown-item" href="https://zkillboard.com/kill/${element.killmail_id}/">${name} @ ${moment(element.killmail_time).utc().format('MMMM Do YYYY')}</a></li>`);
 	      					});
 	      				}
 	      			});
+					$("#cyno-count").text(total_cynoes);
 	   			}
 				});
     }
