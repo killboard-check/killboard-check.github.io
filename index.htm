@@ -32,22 +32,23 @@
       </div>
     <div class="col">
 	  <div class="container" id="cynoes">
-			<div id="cyno-percent"></div>
-		<div class="container">
-			<div class="row">
-				<div class="col-lg-12">
-					<div class="btn-group">
-						<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Losses with cynoes fitted 
-						<span class="badge badge-danger" id="cyno-count"></span><span class="sr-only">cynoes</span> <span class="caret"></span></button>
-						<ul class="dropdown-menu scrollable-menu" role="menu" id="cyno-list"></ul>
-					</div>
-				</div>
-			</div>
+		<div id="out-of">Out of <span id="killmails-checked"></span> and <span id="lossmails-checked"></span> checked:</div>
+		<div id="cyno-percent"></div>
+		<div class="btn-group">
+			<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Losses with cynoes fitted 
+			<span class="badge badge-danger" id="cyno-count"></span><span class="sr-only">cynoes</span> <span class="caret"></span></button>
+			<ul class="dropdown-menu scrollable-menu" role="menu" id="cyno-list"></ul>
+		</div>
+		<div id="supers-percent"></div>
+		<div class="btn-group">
+				<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Kills with supers 
+				<span class="badge badge-danger" id="super-count"></span><span class="sr-only">supers</span> <span class="caret"></span></button>
+				<ul class="dropdown-menu scrollable-menu" role="menu" id="super-list"></ul>
 		</div>
 	  </div>
     </div>
     <div class="col">
-      <div id="flies-with"></div>
+      <div id="flies-with">Flies with:</div>
       <div class="container" id="friends"><ul class="list-group"></ul></div>
     </div>
   </div>
@@ -71,6 +72,10 @@
 		tinysort("#cyno-list>li", {order: 'desc', selector: 'a', data: 'time'});
 	})
 
+	$("#super-list").parent().on('show.bs.dropdown', function(){
+		tinysort("#super-list>li", {order: 'desc', selector: 'a', data: 'time'});
+	})
+
     function getBasicInfo(char_id)
     {
     	$.getJSON(`https://esi.evetech.net/latest/characters/${char_id}/`, function(char_data){
@@ -90,7 +95,6 @@
 			});
 
 			var sec_stat_class;
-
 			if(parseFloat(char_data.security_status) > 2.5)
 			{
 				sec_stat_class = "sec-status-krab";
@@ -104,6 +108,7 @@
 				sec_stat_class = "sec-status-neutral";
 			}
 			$("#sec-status").html(`Security status: <span class="${sec_stat_class}">${(char_data.security_status).toFixed(2)}</span>`);
+
 			$("#birth").html(`${moment(char_data.birthday).format('YYYY')} character`);
 		});
     }
@@ -116,6 +121,7 @@
 			    dataType: "json",
 			    success: function(data) {
 			    	$("#cyno-list").empty();
+					$("#lossmails-checked").text(`${data.length} lossmails`);
 					var total_cynoes = 0;
 	      			data.forEach(function(element){
 	      				var ship = element.victim.ship_type_id;
@@ -131,10 +137,10 @@
 					$("#cyno-count").text(total_cynoes);
 					if(total_cynoes == 0)
 					{
-						$("#cyno-list").append(`<li class="dropdown-item disabled">No ships with cynoes lost</li>`);
+						$("#cyno-list").append(`<li class="dropdown-item disabled">No ships with cynoes lost.</li>`);
 					}
 					var cyno_percent = Math.round(total_cynoes/data.length*100, 1);
-					$("#cyno-percent").text(`Out of ${data.length} lossmails checked ${isNaN(cyno_percent) ? 0 : cyno_percent}% had cyno`);
+					$("#cyno-percent").text(`${isNaN(cyno_percent) ? 0 : cyno_percent}% had cyno`);
 	   			}
 				});
     }
@@ -147,7 +153,8 @@
 			dataType: "json",
 			success: function(data){
 				$("#friends>ul").empty();
-				$("#flies-with").text(`Flies with (${data.length} killmails checked):`)
+				$("#super-list").empty();
+				$("#killmails-checked").text(`${data.length} killmails`)
 				var alliances = new Array();
 				var number_of_killmails = data.length;
 				
@@ -183,6 +190,26 @@
 							}
 					}
 				});
+
+				var supers = [3514, 22852, 23913, 23917, 23919, 42125];
+				var titans = [671, 3764, 11567, 23773, 42126, 42241, 45649];
+				var killmails_with_supers = 0;
+				data.forEach(function(killmail){
+					if(killmail.attackers.some(x => supers.includes(x.ship_type_id) || titans.includes(x.ship_type_id)))
+					{
+						killmails_with_supers += 1;
+						getShipName(killmail.victim.ship_type_id, function(name){
+								$("#super-list").append(`<li><a target="_blank" class="dropdown-item" data-time=${killmail.killmail_time} href="https://zkillboard.com/kill/${killmail.killmail_id}/">${name} @ ${moment(killmail.killmail_time).utc().format('MMMM Do YYYY')}</a></li>`);
+	      				});
+					}
+				});
+				var supers_percent = Math.round(killmails_with_supers/data.length*100, 1);
+				$("#supers-percent").text(`${isNaN(supers_percent) ? 0 : supers_percent}% had supers or titans`);
+				$("#super-count").text(killmails_with_supers);
+				if(killmails_with_supers == 0)
+				{
+					$("#super-list").append(`<li class="dropdown-item disabled">No killmails with supers found.</li>`);
+				}
 			}
 		});
     }
