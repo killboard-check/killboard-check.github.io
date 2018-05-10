@@ -53,6 +53,7 @@
   </div>
 </div>
 <script type="text/javascript">
+//TODO:Add favorite ships
 	$("#char-name-field").keypress(function(event){
         var keycode = (event.keyCode ? event.keyCode : event.which);
         if(keycode == '13'){
@@ -118,7 +119,8 @@
 					var total_cynoes = 0;
 	      			data.forEach(function(element){
 	      				var ship = element.victim.ship_type_id;
-	      				if((element.victim.items.some(module => (module.item_type_id == 28646 /*covert cyno*/ || module.item_type_id == 21096 /*normal cyno*/) && (module.flag > 26 && module.flag < 35))) && (ship != 606 && ship != 588 && ship != 601 && ship != 596))
+						var rookie_ships = [606, 588, 601, 596];
+	      				if((element.victim.items.some(module => (module.item_type_id == 28646 /*covert cyno*/ || module.item_type_id == 21096 /*normal cyno*/) && (module.flag > 26 && module.flag < 35))) && (!rookie_ships.includes(ship)))
 	      				{
 							total_cynoes += 1;
 	      					getShipName(ship, function(name){
