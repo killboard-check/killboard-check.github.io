@@ -15,3 +15,8 @@
     max-height: 400px;
     overflow-x: hidden;
 }
+
+img {
+    background-image: url(loading.gif);
+    background-repeat: no-repeat;
+}
