@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Test</title>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.1/moment.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+
+	<link rel="stylesheet" type="text/css" href="stylin.css"/>
+</head>
+<body>
+<div class="container" id="test" style="margin-top: 6px;">
+  <div class="input-group mb-3">
+  <div class="input-group-prepend">
+    <span class="input-group-text" id="basic-addon1">Character name</span>
+  </div>
+  <input type="text" class="form-control" placeholder="El'Miner" aria-label="Username" aria-describedby="basic-addon1" id="char-name-field">
+</div>
+  <div class="row">
+      <div class="card" style="width: 18rem; max-height: 500px;">
+        <img class="card-img-top" src="" alt="Character portrait" id="char-portrait">
+        <div class="card-body">
+          <h5 class="card-title"><div class="container" id="char-name"></div></h5>
+          <div class="container" id="alliance"></div>
+          <div class="container" id="corporation"></div>
+          <div class="container" id="sec-status"></div>
+          <div class="container" id="birth"></div>
+        </div>
+      </div>
+    <div class="col">
+	  <div class="container" id="cynoes"></div>
+    </div>
+    <div class="col">
+      Flies with:
+      <div class="container" id="friends"></div>
+    </div>
+  </div>
+</div>
+<script type="text/javascript">
+	$("#char-name-field").keypress(function(event){
+        var keycode = (event.keyCode ? event.keyCode : event.which);
+        if(keycode == '13'){
+           getCharID($("#char-name-field").val(), function(char_id)
+           {
+			  $("#char-portrait").attr("src", `https://imageserver.eveonline.com/Character/${char_id}_256.jpg`);
+			  getBasicInfo(char_id);
+			  checkLosses(char_id);
+			  checkKills(char_id);
+           })
+        }
+    });
+
+    function getBasicInfo(char_id)
+    {
+    	$.getJSON(`https://esi.evetech.net/latest/characters/${char_id}/`, function(char_data){
+
+    		$("#char-name, #alliance, #corporation, #sec-status, #birth").empty();
+
+			$("#char-name").html(`<a target="_blank" href="https://evewho.com/pilot/${encodeURI(char_data.name)}">${char_data.name}</a>`);
+
+			if(char_data.alliance_id != undefined)
+			{
+				$.getJSON(`https://esi.evetech.net/latest/alliances/${char_data.alliance_id}/`, function(data){
+				$("#alliance").html(`<a target="_blank" href="https://zkillboard.com/alliance/${char_data.alliance_id}/">${data.name}</a> &lt;${data.ticker}&gt;`);
+			})
+			}
+			$.getJSON(`https://esi.evetech.net/latest/corporations/${char_data.corporation_id}/`, function(data){
+				$("#corporation").html(`<a target="_blank" href="https://zkillboard.com/corporation/${char_data.corporation_id}/">${data.name}</a> [${data.ticker}]`);
+			});
+
+			var sec_stat_class;
+
+			if(parseFloat(char_data.security_status) > 2.5)
+			{
+				sec_stat_class = "sec-status-krab";
+			}
+			else if(parseFloat(char_data.security_status) < -1.0)
+			{
+				sec_stat_class = "sec-status-pvp";
+			}
+			else
+			{
+				sec_stat_class = "sec-status-neutral";
+			}
+			$("#sec-status").html(`Security status: <span class="${sec_stat_class}">${(char_data.security_status).toFixed(2)}</span>`);
+			$("#birth").html(`${moment(char_data.birthday).format('YYYY')} character`);
+		});
+    }
+
+    function checkLosses(char_id)
+    {
+		$.ajax({
+			    cache: true,
+			    url: `https://zkillboard.com/api/losses/characterID/${char_id}/`,
+			    dataType: "json",
+			    success: function(data) {
+			    	$("#cynoes").empty();
+	      			data.forEach(function(element){
+	      				var ship = element.victim.ship_type_id;
+	      				if((element.victim.items.some(module => (module.item_type_id == 28646 /*covert cyno*/ || module.item_type_id == 21096 /*normal cyno*/) && (module.flag > 26 && module.flag < 35))) && (ship != 606 && ship != 588 && ship != 601 && ship != 596))
+	      				{
+	      					getShipName(ship, function(name){
+								$("#cynoes").append(`Had cyno on a ${name} @ ${moment(element.killmail_time).utc().format('MMMM Do YYYY')} </br>`);
+	      					});
+	      				}
+	      			});
+	   			}
+				});
+    }
+
+    function checkKills(char_id)
+    {
+    	$.ajax({
+			cache: true,
+			url: `https://zkillboard.com/api/kills/characterID/${char_id}/`,
+			dataType: "json",
+			success: function(data){
+				$("#friends").empty();
+				var alliances = new Array();
+				data.forEach(function(element){
+					element.attackers.forEach(function(attacker){
+						if(alliances.find(x => x.id == attacker.alliance_id) == undefined)
+						{
+							alliances.push({id: attacker.alliance_id, kills: 1});
+						}
+						else
+						{
+							alliances.find(x => x.id == attacker.alliance_id).kills += 1;
+						}
+					})
+				})
+				alliances.sort(function(a,b){
+					return b.kills - a.kills;
+				})
+				alliances.slice(0, 5).forEach(function(element){
+					if(element.id != undefined)
+					{
+						$.getJSON(`https://esi.evetech.net/latest/alliances/${element.id}/`, function(data){
+							$("#friends").append(`<a target="_blank" href="https://zkillboard.com/alliance/${element.id}/">${data.name}</a> &lt;${data.ticker}&gt; </br>`);
+						})
+					}
+				});
+			}
+		});
+    }
+
+    function getCharID(char_name, callback)
+    {
+    	$.getJSON(`https://esi.evetech.net/latest/search/?categories=character&datasource=tranquility&search=${encodeURI(char_name)}&strict=true`, function(data){
+    		callback(data.character[0]);
+    	})	
+    }
+
+    function getShipName(ship_id, callback)
+    {
+    	$.getJSON(`https://esi.evetech.net/latest/universe/types/${ship_id}/`, function(data){
+    		callback(data.name);
+    	})
+    }
+
+
+	$(document).ready(function(){
+		var char_id = 90659102;
+
+		$("#char-portrait").attr("src", `https://imageserver.eveonline.com/Character/${char_id}_256.jpg`);
+
+		getBasicInfo(char_id);
+
+		checkLosses(char_id);
+		
+		checkKills(char_id)
+	});
+</script>
+</body>
+</html>
