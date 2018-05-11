@@ -198,8 +198,7 @@
 			success: function(data){
 				$("#friends>ul").empty();
 				$("#super-list").empty();
-				$("#killmails-checked").text(`${data.length} killmails`)
-				var number_of_killmails = data.length;
+				$("#killmails-checked").text(`${data.length} killmails`);
 
 				formFriendsList(data, char_id).then((value) => {updateFriendsList(value)});
 
