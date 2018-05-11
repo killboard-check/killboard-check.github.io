@@ -112,10 +112,6 @@
 		tinysort("#cyno-list>li", {order: 'desc', selector: 'a', data: 'time'});
 	})
 
-	$("#super-list").parent().on('show.bs.dropdown', function(){
-		tinysort("#super-list>li", {order: 'desc', selector: 'a', data: 'time'});
-	})
-
     function getBasicInfo(char_id)
     {
     	$.getJSON(`https://esi.evetech.net/latest/characters/${char_id}/`, function(char_data){
@@ -221,32 +217,8 @@
 
 				formFriendsList(data, alliances, char_id).then((value) => {updateFriendsList(value)});
 
-				var supers = [3514, 22852, 23913, 23917, 23919, 42125];
-				var titans = [671, 3764, 11567, 23773, 42126, 42241, 45649];
-				var killmails_with_supers = 0;
-				var killmails_with_supers_recently = 0;
-				var today = moment();
-				data.forEach(function(killmail){
-					if(killmail.attackers.some(x => supers.includes(x.ship_type_id) || titans.includes(x.ship_type_id)))
-					{
-						killmails_with_supers += 1;
-						if(today.diff(moment(killmail.killmail_time), 'months') < 3)
-						{
-							killmails_with_supers_recently += 1;
-						}
-						getShipName(killmail.victim.ship_type_id, function(name){
-								$("#super-list").append(`<li><a target="_blank" class="dropdown-item" data-time=${killmail.killmail_time} href="https://zkillboard.com/kill/${killmail.killmail_id}/">${name} @ ${moment(killmail.killmail_time).utc().format('MMMM Do YYYY')}</a></li>`);
-	      				});
-					}
-				});
-				var killmails_recent = data.filter(killmail => today.diff(moment(killmail.killmail_time), 'months') < 3).length;
-				$("#supers-percent-recent").text(`${getPercent(killmails_with_supers_recently, killmails_recent)}% recently`);
-				$("#supers-percent").text(`${getPercent(killmails_with_supers, data.length)}% had supers or titans`);
-				$("#super-count").text(killmails_with_supers);
-				if(killmails_with_supers == 0)
-				{
-					$("#super-list").append(`<li class="dropdown-item disabled">No killmails with supers found.</li>`);
-				}
+				formSupersKillsList(data).then((value) => {updateSupersKillsList(value)})
+				
 				getAndUpdateMostUsedShips(data, char_id);
 			}
 		});
@@ -365,6 +337,50 @@
 		});
 
 		return Promise.all(promises).then(() => {return friends_list_html});
+	}
+
+	function updateSupersKillsList(html)
+	{
+		$("#super-list").append(html);
+		tinysort("#super-list>li", {order: 'desc', selector: 'a', data: 'time'});
+	}
+
+	function formSupersKillsList(data)
+	{
+		var supers = [3514, 22852, 23913, 23917, 23919, 42125];
+		var titans = [671, 3764, 11567, 23773, 42126, 42241, 45649];
+		var killmails_with_supers = 0;
+		var killmails_with_supers_recently = 0;
+		var today = moment();
+		var super_list = $("#super-list");
+		var super_list_html = "";
+		var promises = [];
+
+		data.forEach(function(killmail){
+			if(killmail.attackers.some(x => supers.includes(x.ship_type_id) || titans.includes(x.ship_type_id)))
+			{
+				killmails_with_supers += 1;
+				if(today.diff(moment(killmail.killmail_time), 'months') < 3)
+				{
+					killmails_with_supers_recently += 1;
+				}
+				promises.push(new Promise((resolve) =>{
+					getShipName(killmail.victim.ship_type_id, function(name){
+						super_list_html += `<li><a target="_blank" class="dropdown-item" data-time=${killmail.killmail_time} href="https://zkillboard.com/kill/${killmail.killmail_id}/">${name} @ ${moment(killmail.killmail_time).utc().format('MMMM Do YYYY')}</a></li>`;
+						resolve();
+					});
+				}))
+			}
+		});
+		var killmails_recent = data.filter(killmail => today.diff(moment(killmail.killmail_time), 'months') < 3).length;
+		$("#supers-percent-recent").text(`${getPercent(killmails_with_supers_recently, killmails_recent)}% recently`);
+		$("#supers-percent").text(`${getPercent(killmails_with_supers, data.length)}% had supers or titans`);
+		$("#super-count").text(killmails_with_supers);
+		if(killmails_with_supers == 0)
+		{
+			super_list_html = `<li class="dropdown-item disabled">No killmails with supers found.</li>`;
+		}
+		return Promise.all(promises).then(() => {return super_list_html});
 	}
 
 
