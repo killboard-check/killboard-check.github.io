@@ -107,7 +107,7 @@
 
     		$("#char-name, #alliance, #corporation, #sec-status, #birth").empty();
 
-			$("#char-name").html(`<a target="_blank" href="https://evewho.com/pilot/${encodeURI(char_data.name)}">${char_data.name}</a>`);
+			$("#char-name").html(`<a target="_blank" href="https://zkillboard.com/character/${char_id}/">${char_data.name}</a>`);
 
 			if(char_data.alliance_id != undefined)
 			{
@@ -134,7 +134,7 @@
 			}
 			$("#sec-status").html(`Security status: <span class="${sec_stat_class}">${(char_data.security_status).toFixed(2)}</span>`);
 
-			$("#birth").html(`${moment(char_data.birthday).format('YYYY')} character`);
+			$("#birth").html(`<a target="_blank" href="https://evewho.com/pilot/${encodeURI(char_data.name)}">${moment(char_data.birthday).format('YYYY')} character</a>`);
 		});
     }
 
