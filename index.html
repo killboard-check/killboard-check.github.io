@@ -29,8 +29,9 @@
           <div class="container" id="sec-status"></div>
           <div class="container" id="birth"></div>
         </div>
-      </div>
-    <div class="col">
+	  </div>
+	<div class="col" id="empty-kb" style="display: none"><div class="alert alert-danger" role="alert">Killboard is empty!</div></div>
+    <div class="col" id="middle-column">
 	  <div class="container" id="cynoes">
 		<div id="out-of">Out of <span id="killmails-checked"></span> and <span id="lossmails-checked"></span> checked:</div>
 		<div><span id="cyno-percent"></span> (<span id="cyno-percent-recent"></span>)</div>
@@ -73,7 +74,7 @@
 			  </div>
 	  </div>
     </div>
-    <div class="col">
+    <div class="col" id="right-column">
       <div id="flies-with">Flies with:</div>
       <div class="container" id="friends"><ul class="list-group"></ul></div>
     </div>
@@ -83,13 +84,27 @@
 	$("#char-name-field").keypress(function(event){
         var keycode = (event.keyCode ? event.keyCode : event.which);
         if(keycode == '13'){
-           getCharID($("#char-name-field").val(), function(char_id)
-           {
-			  $("#char-portrait").attr("src", `https://imageserver.eveonline.com/Character/${char_id}_256.jpg`);
-			  getBasicInfo(char_id);
-			  checkLosses(char_id);
-			  checkKills(char_id);
-           })
+        	getCharID($("#char-name-field").val(), function(char_id)
+        	{
+			$("#char-portrait").attr("src", `https://imageserver.eveonline.com/Character/${char_id}_256.jpg`);
+			getBasicInfo(char_id);
+			isKillboardEmpty(char_id).then((value) => {
+			if(value == true)
+			{
+				$("#middle-column").css("display", "none");
+				$("#right-column").css("display", "none");
+				$("#empty-kb").css("display", "block");
+			}
+			else
+			{
+				checkLosses(char_id);
+			  	checkKills(char_id);
+				$("#middle-column").css("display", "block");
+				$("#right-column").css("display", "block");
+				$("#empty-kb").css("display", "none");
+			}
+			})
+        	})
         }
     });
 
@@ -322,6 +337,15 @@
 		{
 			return percent;
 		}
+	}
+
+	function isKillboardEmpty(char_id)
+	{
+		return new Promise((resolve) => {
+			$.getJSON(`https://zkillboard.com/api/stats/characterID/${char_id}/`).then(function(data){
+			resolve((data.shipsDestroyed === undefined) && (data.shipsLost === undefined));
+			})
+		})
 	}
 
 
