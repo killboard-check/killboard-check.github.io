@@ -37,13 +37,13 @@
 		<div><span id="cyno-percent"></span> (<span id="cyno-percent-recent"></span>)</div>
 		<div class="btn-group">
 			<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Losses with cynoes fitted 
-			<span class="badge badge-danger" id="cyno-count"></span><span class="sr-only">cynoes</span> <span class="caret"></span></button>
+			<span class="badge badge-danger" id="cyno-count"></span><span class="sr-only">cynoes</span><span class="caret"></span></button>
 			<ul class="dropdown-menu scrollable-menu" role="menu" id="cyno-list"></ul>
 		</div>
 		<div><span id="supers-percent"></span> (<span id="supers-percent-recent"></span>)</div>
 		<div class="btn-group">
 				<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Kills with supers 
-				<span class="badge badge-danger" id="super-count"></span><span class="sr-only">supers</span> <span class="caret"></span></button>
+				<span class="badge badge-danger" id="super-count"></span><span class="sr-only">supers</span><span class="caret"></span></button>
 				<ul class="dropdown-menu scrollable-menu" role="menu" id="super-list"></ul>
 		</div>
 	  </div>
@@ -218,26 +218,8 @@
 						}
 					})
 				})
-				alliances.forEach(function(element){
-					if(element.id != undefined)
-					{
-						var alliance_on_killmails = 0;
-						data.forEach(function(killmail){
-							if(killmail.attackers.some(x => x.alliance_id == element.id && x.character_id != char_id))
-								{
-									alliance_on_killmails += 1;
-								}
-							})
-							
-							if(alliance_on_killmails/number_of_killmails > 0.2)
-							{
-							$.getJSON(`https://esi.evetech.net/latest/alliances/${element.id}/`, function(alliance_response){
-								$("#friends>ul").append(`<li class="list-group-item"><a target="_blank" data-number=${alliance_on_killmails} href="https://zkillboard.com/alliance/${element.id}/">${alliance_response.name}</a> &lt;${alliance_response.ticker}&gt; <span class="font-weight-light">(on ${alliance_on_killmails} killmails)</span> </br></li>`);
-								tinysort("#friends>ul>li", {order: 'desc', selector: 'a', data: 'number'});
-							})
-							}
-					}
-				});
+
+				formFriendsList(data, alliances, char_id).then((value) => {updateFriendsList(value)});
 
 				var supers = [3514, 22852, 23913, 23917, 23919, 42125];
 				var titans = [671, 3764, 11567, 23773, 42126, 42241, 45649];
@@ -346,6 +328,43 @@
 			resolve((data.shipsDestroyed === undefined) && (data.shipsLost === undefined));
 			})
 		})
+	}
+
+	function updateFriendsList(html)
+	{
+		$("#friends>ul").append(html);
+		tinysort("#friends>ul>li", {order: 'desc', selector: 'a', data: 'number'});
+	}
+
+	function formFriendsList(data, alliances, char_id)
+	{
+		var promises = [];
+		var friends_list_html = "";
+		var number_of_killmails = data.length;
+
+		alliances.forEach(function(element){
+			if(element.id != undefined)
+			{
+				var alliance_on_killmails = 0;
+				data.forEach(function(killmail){
+					if(killmail.attackers.some(x => x.alliance_id == element.id && x.character_id != char_id))
+					{
+						alliance_on_killmails += 1;
+					}	
+				})
+				if(alliance_on_killmails/number_of_killmails > 0.2)
+				{
+					promises.push(new Promise((resolve) => {
+						$.getJSON(`https://esi.evetech.net/latest/alliances/${element.id}/`).then(function(alliance_response){
+							friends_list_html += `<li class="list-group-item"><a target="_blank" data-number=${alliance_on_killmails} href="https://zkillboard.com/alliance/${element.id}/">${alliance_response.name}</a> &lt;${alliance_response.ticker}&gt; <span class="font-weight-light">(on ${alliance_on_killmails} killmails)</span> </br></li>`;
+							resolve();
+						})
+					}))
+				}
+			}
+		});
+
+		return Promise.all(promises).then(() => {return friends_list_html});
 	}
 
 
