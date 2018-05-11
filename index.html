@@ -46,6 +46,32 @@
 				<ul class="dropdown-menu scrollable-menu" role="menu" id="super-list"></ul>
 		</div>
 	  </div>
+	  <div class="container" style="margin-top: 5px">
+		  	Most used ships were:
+			<div class="row">
+					<div class="col-sm" id="0-most-used" style="display: none">
+						<a target="_blank" href="" id="0-most-used-link">
+							<img id="0-most-used-preview" src="" class="img-thumbnail mx-auto d-block">
+							<div class="text-center" id="0-most-used-text"></div>
+						</a>
+						<div class="text-center" id="0-most-used-amount"></div>
+					</div>
+					<div class="col-sm" id="1-most-used" style="display: none">
+						<a target="_blank" href="" id="1-most-used-link">
+							<img id="1-most-used-preview" src="" class="img-thumbnail mx-auto d-block">
+							<div class="text-center" id="1-most-used-text"></div>
+						</a>
+						<div class="text-center" id="1-most-used-amount"></div>
+					</div>
+					<div class="col-sm" id="2-most-used" style="display: none">
+						<a target="_blank" href="" id="2-most-used-link">
+							<img id="2-most-used-preview" src="" class="img-thumbnail mx-auto d-block">
+							<div class="text-center" id="2-most-used-text"></div>
+						</a>
+						<div class="text-center" id="2-most-used-amount"></div>
+					</div>
+			  </div>
+	  </div>
     </div>
     <div class="col">
       <div id="flies-with">Flies with:</div>
@@ -54,7 +80,6 @@
   </div>
 </div>
 <script type="text/javascript">
-//TODO:Add favorite ships
 	$("#char-name-field").keypress(function(event){
         var keycode = (event.keyCode ? event.keyCode : event.which);
         if(keycode == '13'){
@@ -225,9 +250,52 @@
 				{
 					$("#super-list").append(`<li class="dropdown-item disabled">No killmails with supers found.</li>`);
 				}
+				getAndUpdateMostUsedShips(data, char_id);
 			}
 		});
     }
+
+	function getAndUpdateMostUsedShips(data, char_id)
+	{
+		var used_ships = new Array();
+		data.forEach(function(killmail){
+			var ship_used_on_this_killmail = killmail.attackers.find(x => x.character_id == char_id).ship_type_id;
+			if(used_ships.find(x => x.id == ship_used_on_this_killmail) == undefined)
+			{
+				used_ships.push({id: ship_used_on_this_killmail, kills: 1})
+			}
+			else
+			{
+				used_ships.find(x => x.id == ship_used_on_this_killmail).kills += 1;
+			}
+		})
+		sortShipsByMostUsed(used_ships);
+		updateMostUsedShips(used_ships, char_id);
+	}
+
+	function sortShipsByMostUsed(ships)
+	{
+		return ships.sort(function(a,b){
+			return b.kills - a.kills;
+		})
+	}
+
+	function updateMostUsedShips(ships, char_id)
+	{
+		for (let index = 0; index < 3; index++) {
+			$(`#${index}-most-used`).css("display", "none");
+			if(!(ships[index] === undefined))
+			{
+				$(`#${index}-most-used-preview`).attr("src", `https://imageserver.eveonline.com/Render/${ships[index].id}_128.png`);	
+				$(`#${index}-most-used-amount`).text(`(${ships[index].kills} kills)`);
+				getShipName(ships[index].id, function(ship_name){
+					$(`#${index}-most-used-text`).text(ship_name);
+					$(`#${index}-most-used-link`).attr("href", `https://zkillboard.com/character/${char_id}/losses/shipID/${ships[index].id}/`)
+					$(`#${index}-most-used`).css("display", "block");
+				});
+			}
+		}
+	}
 
     function getCharID(char_name, callback)
     {
