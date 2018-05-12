@@ -84,33 +84,34 @@
 	$("#char-name-field").keypress(function(event){
         var keycode = (event.keyCode ? event.keyCode : event.which);
         if(keycode == '13'){
-        	getCharID($("#char-name-field").val(), function(char_id)
-        	{
-			$("#char-portrait").attr("src", `https://imageserver.eveonline.com/Character/${char_id}_256.jpg`);
-			getBasicInfo(char_id);
-			isKillboardEmpty(char_id).then((value) => {
-			if(value == true)
-			{
-				$("#middle-column").css("display", "none");
-				$("#right-column").css("display", "none");
-				$("#empty-kb").css("display", "block");
-			}
-			else
-			{
-				checkLosses(char_id);
-			  	checkKills(char_id);
-				$("#middle-column").css("display", "block");
-				$("#right-column").css("display", "block");
-				$("#empty-kb").css("display", "none");
-			}
-			})
-        	})
+        	updateChar($("#char-name-field").val());
         }
     });
 
-	$("#cyno-list").parent().on('show.bs.dropdown', function(){
-		tinysort("#cyno-list>li", {order: 'desc', selector: 'a', data: 'time'});
-	})
+	function updateChar(name)
+	{
+		getCharID(name, function(char_id)
+        	{
+				$("#char-portrait").attr("src", `https://imageserver.eveonline.com/Character/${char_id}_256.jpg`);
+				getBasicInfo(char_id);
+				isKillboardEmpty(char_id).then((value) => {
+					if(value == true)
+					{
+						$("#middle-column").css("display", "none");
+						$("#right-column").css("display", "none");
+						$("#empty-kb").css("display", "block");
+					}
+					else
+					{
+						checkLosses(char_id);
+						checkKills(char_id);
+						$("#middle-column").css("display", "block");
+						$("#right-column").css("display", "block");
+						$("#empty-kb").css("display", "none");
+					}
+				})
+        	})
+	}
 
     function getBasicInfo(char_id)
     {
@@ -158,33 +159,8 @@
 			    success: function(data) {
 			    	$("#cyno-list").empty();
 					$("#lossmails-checked").text(`${data.length} lossmails`);
-					var total_cynoes = 0;
-					var total_cynoes_recently = 0;
-					var today = moment();
-	      			data.forEach(function(killmail){
-	      				var ship = killmail.victim.ship_type_id;
-						var rookie_ships = [606, 588, 601, 596];
-	      				if((killmail.victim.items.some(module => (module.item_type_id == 28646 /*covert cyno*/ || module.item_type_id == 21096 /*normal cyno*/) && (module.flag > 26 && module.flag < 35))) && (!rookie_ships.includes(ship)))
-	      				{
-							total_cynoes += 1;
-							if(today.diff(moment(killmail.killmail_time), 'months') < 3)
-							{
-								total_cynoes_recently += 1;
-							}
-	      					getShipName(ship, function(name){
-								$("#cyno-list").append(`<li><a target="_blank" class="dropdown-item" data-time=${killmail.killmail_time} href="https://zkillboard.com/kill/${killmail.killmail_id}/">${name} @ ${moment(killmail.killmail_time).utc().format('MMMM Do YYYY')}</a></li>`);
-	      					});
-	      				}
-	      			});
-					var pod_ship_id = [670, 33328];
-					var lossmails_recently = data.filter(lossmail => (today.diff(moment(lossmail.killmail_time), 'months') < 3) && (!pod_ship_id.includes(lossmail.victim.ship_type_id))).length;
-					$("#cyno-percent-recent").text(`${getPercent(total_cynoes_recently, lossmails_recently)} % recently`);
-					$("#cyno-count").text(total_cynoes);
-					if(total_cynoes == 0)
-					{
-						$("#cyno-list").append(`<li class="dropdown-item disabled">No ships with cynoes lost.</li>`);
-					}
-					$("#cyno-percent").text(`${getPercent(total_cynoes, data.length)}% had cyno`);
+
+					formCynoLossesList(data).then((value) => {updateCynoLossesList(value)});
 	   			}
 				});
     }
@@ -299,7 +275,7 @@
 		var friends_list_html = "";
 		var number_of_killmails = data.length;
 
-		var alliances = getAlliancesList(data);
+		var alliances = formAlliancesList(data);
 
 		alliances.forEach(function(alliance_id){
 			if(alliance_id != undefined)
@@ -326,7 +302,7 @@
 		return Promise.all(promises).then(() => {return friends_list_html});
 	}
 
-	function getAlliancesList(data)
+	function formAlliancesList(data)
 	{
 		var alliances = [];
 		data.forEach(function(killmail){
@@ -344,6 +320,50 @@
 	{
 		$("#super-list").append(html);
 		tinysort("#super-list>li", {order: 'desc', selector: 'a', data: 'time'});
+	}
+
+	function formCynoLossesList(data)
+	{
+		var total_cynoes = 0;
+		var total_cynoes_recently = 0;
+		var today = moment();
+		var promises = [];
+		var cyno_list_html = "";
+
+		data.forEach(function(killmail){
+			var ship = killmail.victim.ship_type_id;
+			var rookie_ships = [606, 588, 601, 596];
+			if((killmail.victim.items.some(module => (module.item_type_id == 28646 /*covert cyno*/ || module.item_type_id == 21096 /*normal cyno*/) && (module.flag > 26 && module.flag < 35))) && (!rookie_ships.includes(ship)))
+			{
+				total_cynoes += 1;
+				if(today.diff(moment(killmail.killmail_time), 'months') < 3)
+				{
+					total_cynoes_recently += 1;
+				}
+				promises.push(new Promise((resolve) => {
+					getShipName(ship, function(name){
+						cyno_list_html += `<li><a target="_blank" class="dropdown-item" data-time=${killmail.killmail_time} href="https://zkillboard.com/kill/${killmail.killmail_id}/">${name} @ ${moment(killmail.killmail_time).utc().format('MMMM Do YYYY')}</a></li>`;
+						resolve();
+					});
+				}))
+			}
+		});
+		var pod_ship_id = [670, 33328];
+		var lossmails_recently = data.filter(lossmail => (today.diff(moment(lossmail.killmail_time), 'months') < 3) && (!pod_ship_id.includes(lossmail.victim.ship_type_id))).length;
+		$("#cyno-percent-recent").text(`${getPercent(total_cynoes_recently, lossmails_recently)} % recently`);
+		$("#cyno-count").text(total_cynoes);
+		if(total_cynoes == 0)
+		{
+			cyno_list_html += `<li class="dropdown-item disabled">No ships with cynoes lost.</li>`;
+		}
+		$("#cyno-percent").text(`${getPercent(total_cynoes, data.length)}% had cyno`);
+		return Promise.all(promises).then(() => {return cyno_list_html})
+	}
+
+	function updateCynoLossesList(html)
+	{
+		$("#cyno-list").append(html);
+		tinysort("#cyno-list>li", {order: 'desc', selector: 'a', data: 'time'});
 	}
 
 	function formSupersKillsList(data)
