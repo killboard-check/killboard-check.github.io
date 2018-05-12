@@ -26,8 +26,8 @@ function updateChar(name)
                     $("#right-column").css("display", "block");
                     $("#empty-kb").css("display", "none");
                 }
-            })
-        })
+            });
+        });
 }
 
 function getBasicInfo(char_id)
@@ -42,7 +42,7 @@ function getBasicInfo(char_id)
         {
             $.getJSON(`https://esi.evetech.net/latest/alliances/${char_data.alliance_id}/`, function(data){
             $("#alliance").html(`<a target="_blank" href="https://zkillboard.com/alliance/${char_data.alliance_id}/">${data.name}</a> &lt;${data.ticker}&gt;`);
-        })
+        });
         }
         $.getJSON(`https://esi.evetech.net/latest/corporations/${char_data.corporation_id}/`, function(data){
             $("#corporation").html(`<a target="_blank" href="https://zkillboard.com/corporation/${char_data.corporation_id}/">${data.name}</a> [${data.ticker}]`);
@@ -77,7 +77,7 @@ function checkLosses(char_id)
                 $("#cyno-list").empty();
                 $("#lossmails-checked").text(`${data.length} lossmails`);
 
-                formCynoLossesList(data).then((value) => {updateCynoLossesList(value)});
+                formCynoLossesList(data).then((value) => {updateCynoLossesList(value);});
                }
             });
 }
@@ -93,9 +93,9 @@ function checkKills(char_id)
             $("#super-list").empty();
             $("#killmails-checked").text(`${data.length} killmails`);
 
-            formFriendsList(data, char_id).then((value) => {updateFriendsList(value)});
+            formFriendsList(data, char_id).then((value) => {updateFriendsList(value);});
 
-            formSupersKillsList(data).then((value) => {updateSupersKillsList(value)})
+            formSupersKillsList(data).then((value) => {updateSupersKillsList(value);});
             
             getAndUpdateMostUsedShips(data, char_id);
         }
@@ -104,7 +104,7 @@ function checkKills(char_id)
 
 function getAndUpdateMostUsedShips(data, char_id)
 {
-    var used_ships = new Array();
+    var used_ships = [];
     data.forEach(function(killmail){
         var char_on_killmail = killmail.attackers.find(attacker => attacker.character_id == char_id);
         if("ship_type_id" in char_on_killmail)
@@ -112,14 +112,14 @@ function getAndUpdateMostUsedShips(data, char_id)
             var ship_used_on_this_killmail = char_on_killmail.ship_type_id;
             if(used_ships.find(x => x.id == ship_used_on_this_killmail) == undefined)
             {
-                used_ships.push({id: ship_used_on_this_killmail, kills: 1})
+                used_ships.push({id: ship_used_on_this_killmail, kills: 1});
             }
             else
             {
                 used_ships.find(x => x.id == ship_used_on_this_killmail).kills += 1;
             }
         }
-    })
+    });
     sortShipsByMostUsed(used_ships);
     updateMostUsedShips(used_ships, char_id);
 }
@@ -128,7 +128,7 @@ function sortShipsByMostUsed(ships)
 {
     return ships.sort(function(a,b){
         return b.kills - a.kills;
-    })
+    });
 }
 
 function updateMostUsedShips(ships, char_id)
@@ -141,7 +141,7 @@ function updateMostUsedShips(ships, char_id)
             $(`#${index}-most-used-amount`).text(`(${ships[index].kills} kills)`);
             getShipName(ships[index].id, function(ship_name){
                 $(`#${index}-most-used-text`).text(ship_name);
-                $(`#${index}-most-used-link`).attr("href", `https://zkillboard.com/character/${char_id}/losses/shipID/${ships[index].id}/`)
+                $(`#${index}-most-used-link`).attr("href", `https://zkillboard.com/character/${char_id}/losses/shipID/${ships[index].id}/`);
                 $(`#${index}-most-used`).css("display", "block");
             });
         }
@@ -152,14 +152,14 @@ function getCharID(char_name, callback)
 {
     $.getJSON(`https://esi.evetech.net/latest/search/?categories=character&datasource=tranquility&search=${encodeURI(char_name)}&strict=true`, function(data){
         callback(data.character[0]);
-    })	
+    });
 }
 
 function getShipName(ship_id, callback)
 {
     $.getJSON(`https://esi.evetech.net/latest/universe/types/${ship_id}/`, function(data){
         callback(data.name);
-    })
+    });
 }
 
 function getPercent(number, total)
@@ -180,8 +180,8 @@ function isKillboardEmpty(char_id)
     return new Promise((resolve) => {
         $.getJSON(`https://zkillboard.com/api/stats/characterID/${char_id}/`).then(function(data){
         resolve((data.shipsDestroyed === undefined) && (data.shipsLost === undefined));
-        })
-    })
+        });
+    });
 }
 
 function updateFriendsList(html)
@@ -207,20 +207,20 @@ function formFriendsList(data, char_id)
                 {
                     alliance_on_killmails += 1;
                 }	
-            })
+            });
             if(alliance_on_killmails/number_of_killmails > 0.2)
             {
                 promises.push(new Promise((resolve) => {
                     $.getJSON(`https://esi.evetech.net/latest/alliances/${alliance_id}/`).then(function(alliance_response){
                         friends_list_html += `<li class="list-group-item"><a target="_blank" data-number=${alliance_on_killmails} href="https://zkillboard.com/alliance/${alliance_id}/">${alliance_response.name}</a> &lt;${alliance_response.ticker}&gt; <span class="font-weight-light">(on ${alliance_on_killmails} killmails)</span> </br></li>`;
                         resolve();
-                    })
-                }))
+                    });
+                }));
             }
         }
     });
 
-    return Promise.all(promises).then(() => {return friends_list_html});
+    return Promise.all(promises).then(() => {return friends_list_html;});
 }
 
 function formAlliancesList(data)
@@ -232,8 +232,8 @@ function formAlliancesList(data)
             {
                 alliances.push(attacker.alliance_id);
             }
-        })
-    })
+        });
+    });
     return alliances;
 }
 
@@ -266,7 +266,7 @@ function formCynoLossesList(data)
                     cyno_list_html += `<li><a target="_blank" class="dropdown-item" data-time=${killmail.killmail_time} href="https://zkillboard.com/kill/${killmail.killmail_id}/">${name} @ ${moment(killmail.killmail_time).utc().format('MMMM Do YYYY')}</a></li>`;
                     resolve();
                 });
-            }))
+            }));
         }
     });
     var pod_ship_id = [670, 33328];
@@ -278,7 +278,7 @@ function formCynoLossesList(data)
         cyno_list_html += `<li class="dropdown-item disabled">No ships with cynoes lost.</li>`;
     }
     $("#cyno-percent").text(`${getPercent(total_cynoes, data.length)}% had cyno`);
-    return Promise.all(promises).then(() => {return cyno_list_html})
+    return Promise.all(promises).then(() => {return cyno_list_html;});
 }
 
 function updateCynoLossesList(html)
@@ -311,7 +311,7 @@ function formSupersKillsList(data)
                     super_list_html += `<li><a target="_blank" class="dropdown-item" data-time=${killmail.killmail_time} href="https://zkillboard.com/kill/${killmail.killmail_id}/">${name} @ ${moment(killmail.killmail_time).utc().format('MMMM Do YYYY')}</a></li>`;
                     resolve();
                 });
-            }))
+            }));
         }
     });
     var killmails_recent = data.filter(killmail => today.diff(moment(killmail.killmail_time), 'months') < 3).length;
@@ -322,7 +322,7 @@ function formSupersKillsList(data)
     {
         super_list_html = `<li class="dropdown-item disabled">No killmails with supers found.</li>`;
     }
-    return Promise.all(promises).then(() => {return super_list_html});
+    return Promise.all(promises).then(() => {return super_list_html;});
 }
 
 
@@ -335,5 +335,5 @@ $(document).ready(function(){
 
     checkLosses(char_id);
     
-    checkKills(char_id)
+    checkKills(char_id);
 });
