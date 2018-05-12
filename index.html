@@ -189,14 +189,18 @@
 	{
 		var used_ships = new Array();
 		data.forEach(function(killmail){
-			var ship_used_on_this_killmail = killmail.attackers.find(x => x.character_id == char_id).ship_type_id;
-			if(used_ships.find(x => x.id == ship_used_on_this_killmail) == undefined)
+			var char_on_killmail = killmail.attackers.find(attacker => attacker.character_id == char_id);
+			if("ship_type_id" in char_on_killmail)
 			{
-				used_ships.push({id: ship_used_on_this_killmail, kills: 1})
-			}
-			else
-			{
-				used_ships.find(x => x.id == ship_used_on_this_killmail).kills += 1;
+				var ship_used_on_this_killmail = char_on_killmail.ship_type_id;
+				if(used_ships.find(x => x.id == ship_used_on_this_killmail) == undefined)
+				{
+					used_ships.push({id: ship_used_on_this_killmail, kills: 1})
+				}
+				else
+				{
+					used_ships.find(x => x.id == ship_used_on_this_killmail).kills += 1;
+				}
 			}
 		})
 		sortShipsByMostUsed(used_ships);
