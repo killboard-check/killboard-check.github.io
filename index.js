@@ -7,6 +7,15 @@ $("#char-name-field").keypress(function(event){
 
 function updateChar(name)
 {
+    $("#empty-kb").css("display", "none");
+    $("#middle-column, #right-column").css("display", "block");
+    $("#right-column-friends").css("display", "none");
+    $("#right-column-loading").css("display", "block");
+    $(".card-body").css("display", "none");
+    $("#card-body-loading").css("display", "block");
+    $("#info").css("display", "none");
+    $("#info-loading").css("display", "block");
+
     getCharID(name, function(char_id)
         {
             $("#char-portrait").attr("src", `https://imageserver.eveonline.com/Character/${char_id}_256.jpg`);
@@ -20,11 +29,12 @@ function updateChar(name)
                 }
                 else
                 {
-                    checkLosses(char_id);
-                    checkKills(char_id);
-                    $("#middle-column").css("display", "block");
-                    $("#right-column").css("display", "block");
-                    $("#empty-kb").css("display", "none");
+                    var promises = [];
+                    promises.push(checkLosses(char_id), checkKills(char_id));
+                    Promise.all(promises).then(() => {
+                        $("#empty-kb, #info-loading").css("display", "none");
+                        $("#middle-column, #info, #right-column").css("display", "block");
+                    });
                 }
             });
         });
@@ -64,31 +74,39 @@ function getBasicInfo(char_id)
         $("#sec-status").html(`Security status: <span class="${sec_stat_class}">${(char_data.security_status).toFixed(2)}</span>`);
 
         $("#birth").html(`<a target="_blank" href="https://evewho.com/pilot/${encodeURI(char_data.name)}">${moment(char_data.birthday).format('YYYY')} character</a>`);
+
+        $(".card-body").css("display", "block");
+        $("#card-body-loading").css("display", "none");
     });
 }
 
 function checkLosses(char_id)
 {
-    $.ajax({
+    return new Promise((resolve) => {
+        $.ajax({
             cache: true,
             url: `https://zkillboard.com/api/losses/characterID/${char_id}/`,
             dataType: "json",
-            success: function(data) {
+            }).done((data) => {
                 $("#cyno-list").empty();
                 $("#lossmails-checked").text(`${data.length} lossmails`);
 
-                formCynoLossesList(data).then((value) => {updateCynoLossesList(value);});
-               }
+                formCynoLossesList(data).then((value) => {
+                    updateCynoLossesList(value);
+                    resolve();
+                });
             });
+    });
 }
 
 function checkKills(char_id)
 {
-    $.ajax({
-        cache: true,
-        url: `https://zkillboard.com/api/kills/characterID/${char_id}/`,
-        dataType: "json",
-        success: function(data){
+    return new Promise((resolve) => {
+        $.ajax({
+            cache: true,
+            url: `https://zkillboard.com/api/kills/characterID/${char_id}/`,
+            dataType: "json",
+        }).done((data) => {
             $("#friends>ul").empty();
             $("#super-list").empty();
             $("#killmails-checked").text(`${data.length} killmails`);
@@ -97,31 +115,34 @@ function checkKills(char_id)
 
             formSupersKillsList(data).then((value) => {updateSupersKillsList(value);});
             
-            getAndUpdateMostUsedShips(data, char_id);
-        }
+            getAndUpdateMostUsedShips(data, char_id).then(() => {resolve();});
+        });
     });
 }
 
 function getAndUpdateMostUsedShips(data, char_id)
 {
-    var used_ships = [];
-    data.forEach(function(killmail){
-        var char_on_killmail = killmail.attackers.find(attacker => attacker.character_id == char_id);
-        if("ship_type_id" in char_on_killmail)
-        {
-            var ship_used_on_this_killmail = char_on_killmail.ship_type_id;
-            if(used_ships.find(x => x.id == ship_used_on_this_killmail) == undefined)
+    return new Promise((resolve) => {
+        var used_ships = [];
+        data.forEach(function(killmail){
+            var char_on_killmail = killmail.attackers.find(attacker => attacker.character_id == char_id);
+            if("ship_type_id" in char_on_killmail)
             {
-                used_ships.push({id: ship_used_on_this_killmail, kills: 1});
+                var ship_used_on_this_killmail = char_on_killmail.ship_type_id;
+                if(used_ships.find(x => x.id == ship_used_on_this_killmail) == undefined)
+                {
+                    used_ships.push({id: ship_used_on_this_killmail, kills: 1});
+                }
+                else
+                {
+                    used_ships.find(x => x.id == ship_used_on_this_killmail).kills += 1;
+                }
             }
-            else
-            {
-                used_ships.find(x => x.id == ship_used_on_this_killmail).kills += 1;
-            }
-        }
+        });
+        sortShipsByMostUsed(used_ships);
+        updateMostUsedShips(used_ships, char_id);
+        resolve();
     });
-    sortShipsByMostUsed(used_ships);
-    updateMostUsedShips(used_ships, char_id);
 }
 
 function sortShipsByMostUsed(ships)
@@ -220,7 +241,11 @@ function formFriendsList(data, char_id)
         }
     });
 
-    return Promise.all(promises).then(() => {return friends_list_html;});
+    return Promise.all(promises).then(() => {
+        $("#right-column-friends").css("display", "block");
+        $("#right-column-loading").css("display", "none");
+        return friends_list_html;
+    });
 }
 
 function formAlliancesList(data)
@@ -327,13 +352,5 @@ function formSupersKillsList(data)
 
 
 $(document).ready(function(){
-    var char_id = 90659102;
-
-    $("#char-portrait").attr("src", `https://imageserver.eveonline.com/Character/${char_id}_256.jpg`);
-
-    getBasicInfo(char_id);
-
-    checkLosses(char_id);
-    
-    checkKills(char_id);
+    updateChar("Itachi Uchonela");
 });

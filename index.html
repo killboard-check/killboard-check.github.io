@@ -28,55 +28,62 @@
           <div class="container" id="corporation"></div>
           <div class="container" id="sec-status"></div>
           <div class="container" id="birth"></div>
-        </div>
+				</div>
+				<div class="spinner" style="display: none; position: relative; height: 100px;" id="card-body-loading"></div>
 	  </div>
 	<div class="col" id="empty-kb" style="display: none"><div class="alert alert-danger" role="alert">Killboard is empty!</div></div>
-    <div class="col" id="middle-column">
-	  <div class="container" id="cynoes">
-		<div id="out-of">Out of <span id="killmails-checked"></span> and <span id="lossmails-checked"></span> checked:</div>
-		<div><span id="cyno-percent"></span> (<span id="cyno-percent-recent"></span>)</div>
-		<div class="btn-group">
-			<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Losses with cynoes fitted 
-			<span class="badge badge-danger" id="cyno-count"></span><span class="sr-only">cynoes</span><span class="caret"></span></button>
-			<ul class="dropdown-menu scrollable-menu" role="menu" id="cyno-list"></ul>
+  <div class="col" id="middle-column">
+		<div id="info">
+			<div class="container" id="cynoes">
+					<div id="out-of">Out of <span id="killmails-checked"></span> and <span id="lossmails-checked"></span> checked:</div>
+					<div><span id="cyno-percent"></span> (<span id="cyno-percent-recent"></span>)</div>
+					<div class="btn-group">
+						<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Losses with cynoes fitted 
+						<span class="badge badge-danger" id="cyno-count"></span><span class="sr-only">cynoes</span><span class="caret"></span></button>
+						<ul class="dropdown-menu scrollable-menu" role="menu" id="cyno-list"></ul>
+					</div>
+					<div><span id="supers-percent"></span> (<span id="supers-percent-recent"></span>)</div>
+					<div class="btn-group">
+							<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Kills with supers 
+							<span class="badge badge-danger" id="super-count"></span><span class="sr-only">supers</span><span class="caret"></span></button>
+							<ul class="dropdown-menu scrollable-menu" role="menu" id="super-list"></ul>
+					</div>
+					</div>
+					<div class="container" style="margin-top: 5px">
+							Most used ships were:
+						<div class="row">
+								<div class="col-sm" id="0-most-used" style="display: none">
+									<a target="_blank" href="" id="0-most-used-link">
+										<img id="0-most-used-preview" src="" class="img-thumbnail mx-auto d-block">
+										<div class="text-center" id="0-most-used-text"></div>
+									</a>
+									<div class="text-center" id="0-most-used-amount"></div>
+								</div>
+								<div class="col-sm" id="1-most-used" style="display: none">
+									<a target="_blank" href="" id="1-most-used-link">
+										<img id="1-most-used-preview" src="" class="img-thumbnail mx-auto d-block">
+										<div class="text-center" id="1-most-used-text"></div>
+									</a>
+									<div class="text-center" id="1-most-used-amount"></div>
+								</div>
+								<div class="col-sm" id="2-most-used" style="display: none">
+									<a target="_blank" href="" id="2-most-used-link">
+										<img id="2-most-used-preview" src="" class="img-thumbnail mx-auto d-block">
+										<div class="text-center" id="2-most-used-text"></div>
+									</a>
+									<div class="text-center" id="2-most-used-amount"></div>
+								</div>
+						</div>
+				</div>
+			</div>
+			<div class="spinner" id="info-loading"></div>
 		</div>
-		<div><span id="supers-percent"></span> (<span id="supers-percent-recent"></span>)</div>
-		<div class="btn-group">
-				<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Kills with supers 
-				<span class="badge badge-danger" id="super-count"></span><span class="sr-only">supers</span><span class="caret"></span></button>
-				<ul class="dropdown-menu scrollable-menu" role="menu" id="super-list"></ul>
-		</div>
-	  </div>
-	  <div class="container" style="margin-top: 5px">
-		  	Most used ships were:
-			<div class="row">
-					<div class="col-sm" id="0-most-used" style="display: none">
-						<a target="_blank" href="" id="0-most-used-link">
-							<img id="0-most-used-preview" src="" class="img-thumbnail mx-auto d-block">
-							<div class="text-center" id="0-most-used-text"></div>
-						</a>
-						<div class="text-center" id="0-most-used-amount"></div>
-					</div>
-					<div class="col-sm" id="1-most-used" style="display: none">
-						<a target="_blank" href="" id="1-most-used-link">
-							<img id="1-most-used-preview" src="" class="img-thumbnail mx-auto d-block">
-							<div class="text-center" id="1-most-used-text"></div>
-						</a>
-						<div class="text-center" id="1-most-used-amount"></div>
-					</div>
-					<div class="col-sm" id="2-most-used" style="display: none">
-						<a target="_blank" href="" id="2-most-used-link">
-							<img id="2-most-used-preview" src="" class="img-thumbnail mx-auto d-block">
-							<div class="text-center" id="2-most-used-text"></div>
-						</a>
-						<div class="text-center" id="2-most-used-amount"></div>
-					</div>
-			  </div>
-	  </div>
-    </div>
     <div class="col" id="right-column">
-      <div id="flies-with">Flies with:</div>
-      <div class="container" id="friends"><ul class="list-group"></ul></div>
+			<div id="right-column-friends">
+					<div id="flies-with">Flies with:</div>
+					<div class="container" id="friends"><ul class="list-group"></ul></div>
+			</div>
+			<div id="right-column-loading" class="spinner" style="display: none;"></div>
     </div>
   </div>
 </div>
