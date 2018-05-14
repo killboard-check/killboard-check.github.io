@@ -16,28 +16,41 @@ function updateChar(name)
     $("#info").css("display", "none");
     $("#info-loading").css("display", "block");
 
-    getCharID(name, function(char_id)
-        {
-            $("#char-portrait").attr("src", `https://imageserver.eveonline.com/Character/${char_id}_256.jpg`);
-            getBasicInfo(char_id);
-            isKillboardEmpty(char_id).then((value) => {
-                if(value == true)
-                {
-                    $("#middle-column").css("display", "none");
-                    $("#right-column").css("display", "none");
-                    $("#empty-kb").css("display", "block");
-                }
-                else
-                {
-                    var promises = [];
-                    promises.push(checkLosses(char_id), checkKills(char_id));
-                    Promise.all(promises).then(() => {
-                        $("#empty-kb, #info-loading").css("display", "none");
-                        $("#middle-column, #info, #right-column").css("display", "block");
-                    });
-                }
-            });
+    function processChar(char_id)
+    {
+        $("#char-portrait").attr("src", `https://imageserver.eveonline.com/Character/${char_id}_256.jpg`);
+        getBasicInfo(char_id);
+        isKillboardEmpty(char_id).then((value) => {
+            if(value == true)
+            {
+                $("#middle-column").css("display", "none");
+                $("#right-column").css("display", "none");
+                $("#empty-kb").css("display", "block");
+            }
+            else
+            {
+                var promises = [];
+                promises.push(checkLosses(char_id), checkKills(char_id));
+                Promise.all(promises).then(() => {
+                    $("#empty-kb, #info-loading").css("display", "none");
+                    $("#middle-column, #info, #right-column").css("display", "block");
+                });
+            }
         });
+    }
+
+    if($("#strict_checkbox").is(":checked"))
+    {
+        getCharIDStrict(name).then((char_id) => {
+            processChar(char_id);
+        });
+    }
+    else
+    {
+        getCharID(name).then((char_id) => {
+            processChar(char_id);
+        });
+    }
 }
 
 function getBasicInfo(char_id)
@@ -169,10 +182,45 @@ function updateMostUsedShips(ships, char_id)
     }
 }
 
-function getCharID(char_name, callback)
+function getCharID(char_name)
 {
-    $.getJSON(`https://esi.evetech.net/latest/search/?categories=character&datasource=tranquility&search=${encodeURI(char_name)}&strict=true`, function(data){
-        callback(data.character[0]);
+    return new Promise((resolve) => {
+        $.getJSON(`https://esi.evetech.net/latest/search/?categories=character&datasource=tranquility&search=${encodeURI(char_name)}&strict=true`).then((data) => {
+            resolve(data.character[0]);
+        });
+    });
+}
+
+function getCharIDStrict(char_name)
+{
+    return new Promise((resolve) => {
+        $.getJSON(`https://esi.evetech.net/latest/search/?categories=character&datasource=tranquility&search=${encodeURI(char_name)}&strict=true`).then((data) => {
+            resolve(checkAllNames(char_name, data));
+        }).then((char_id) => {
+            resolve(char_id);
+        });
+    });
+}
+
+function checkAllNames(char_name, data)
+{
+    var promises = [];
+    var correct_char;
+
+    data.character.forEach((element) => {
+        promises.push(new Promise((resolve) => {
+            $.getJSON(`https://esi.evetech.net/latest/characters/${element}/`).then((char_data) => {
+                if(char_name === char_data.name)
+                {
+                    correct_char = element;
+                }
+                resolve();
+            });
+        }));
+    });
+
+    return Promise.all(promises).then(() => {
+        return correct_char;
     });
 }
 
@@ -353,4 +401,5 @@ function formSupersKillsList(data)
 
 $(document).ready(function(){
     updateChar("Itachi Uchonela");
+    $("#strict_checkbox_group").tooltip({title: "Slower search; only use if normal search can't find the character."});
 });
