@@ -344,7 +344,7 @@ function formCynoLossesList(data)
     });
     var pod_ship_id = [670, 33328];
     var lossmails_recently = data.filter(lossmail => (today.diff(moment(lossmail.killmail_time), 'months') < 3) && (!pod_ship_id.includes(lossmail.victim.ship_type_id))).length;
-    $("#cyno-percent-recent").text(`${getPercent(total_cynoes_recently, lossmails_recently)} % recently`);
+    $("#cyno-percent-recent").text(`${getPercent(total_cynoes_recently, lossmails_recently)}% recently`);
     $("#cyno-count").text(total_cynoes);
     if(total_cynoes == 0)
     {
